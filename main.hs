@@ -2,6 +2,7 @@ import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Language (emptyDef)
 import qualified Text.ParserCombinators.Parsec.Token as Tok
 import System.Environment
+import Cgen as C
 
 lexer :: Tok.TokenParser()
 lexer = Tok.makeTokenParser emptyDef {
@@ -36,45 +37,15 @@ parseFile parser filename = do
 		Left e -> error $ show e
 		Right r -> r
 
-cPuts str =
-	"puts(\"" ++ str ++ "\");"
-
-data CIncludes = CIncludes {strings :: [String]}
-printCIncludes ci =
-	foldr1 (++) $ map (\x -> "#include \"" ++ x ++ "\"") (strings ci)
-
-data CStatement = CStatement {str :: String}
-printCStatement cs =
-	"printf(\"" ++ str cs ++ "\\n\")"
-
-data CBlock = CBlock {statements :: [CStatement]}
-printCBlock cb =
-	"{\n" ++ foldr1 (++) (map (\x -> "\t" ++ printCStatement x ++ ";\n") (statements cb)) ++ "}"
-
-data CFuncHdr = CFuncHdr {retType :: String, name :: String}
-printCFuncHdr cf =
-	retType cf ++ " " ++ name cf ++ "()"
-
-data CFuncDef = CFuncDef {header :: CFuncHdr, body :: CBlock}
-printCFuncDef fd =
-	printCFuncHdr (header fd) ++ " " ++ printCBlock (body fd)
-
-data CFile = CFile {includes :: CIncludes, funcDefs :: [CFuncDef]}
-printCFile :: CFile -> IO ()
-printCFile cf =
-	printCIncludes (includes cf) ++ "\n"
-
 main :: IO ()
 main = do
 	args <- getArgs
-	prog <- parseFile program (head args)
-	putStrLn $ printCFile $ CFile {
-		includes = CIncludes ["stdio.h"],
-		funcDefs = [
-			CFuncDef {
-				header = CFuncHdr "int" "main",
-				body = CBlock [CStatement "Benis"]
-			}
-		]
-	}
-
+	(Program p) <- parseFile program (head args)
+	C.putCFile (C.Includes ["stdio.h"]) [C.FuncDef {
+			header = C.FuncHdr {
+				retType = "int",
+				name = "main"
+			},
+			body = C.Block $ map C.Statement p
+		}]
+	
