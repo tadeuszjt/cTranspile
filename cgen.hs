@@ -2,15 +2,15 @@ module Cgen where
 
 tabs n = replicate n '\t'
 
-data Statement = Statement {str :: String}
-putStatement i s =
-	putStrLn $ tabs i ++ "puts(\"" ++ str s ++ "\");"
+data Statement = Statement String
+putStatement indent (Statement str) =
+	putStrLn $ tabs indent ++ "puts(\"" ++ str ++ "\");"
 
 data Block = Block {statements :: [Statement]}
-putBlock i b = do
-	putStrLn $ tabs i ++ "{"
-	mapM_ (putStatement $ i+1) $ statements b
-	putStrLn $ tabs i ++ "}"
+putBlock indent (Block stmts) = do
+	putStrLn $ tabs indent ++ "{"
+	mapM_ (putStatement $ indent+1) stmts
+	putStrLn $ tabs indent ++ "}"
 
 data Includes = Includes [String]
 putIncludes (Includes ss) =
@@ -25,10 +25,26 @@ putFuncDef f = do
 	putFuncHdr (header f)
 	putBlock 0 (body f)
 
-putCFile :: Includes -> [FuncDef] -> IO ()
-putCFile includes funcDefs = do
+data CFile = CFile {includes :: Includes, funcDefs :: [FuncDef]}
+putCFile :: CFile -> IO ()
+putCFile (CFile includes funcDefs) = do
 	putIncludes includes
 	putStrLn ""
 	mapM_ (\x -> do putFuncHdr x; putStrLn ";") $ map header funcDefs
 	putStrLn ""
 	mapM_ putFuncDef funcDefs
+
+addFuncDef :: CFile -> FuncDef -> CFile
+addFuncDef cFile funcDef =
+	CFile {
+		includes = includes cFile,
+		funcDefs = funcDefs cFile ++ [funcDef]
+	}
+
+addStatement :: CFile -> String -> Statement -> CFile
+addStatement cFile funcName statement =
+	CFile {
+		includes = includes cFile,
+		funcDefs = [ if (name $ header x) == funcName then FuncDef (header x) (Block $ (statements $ body x) ++ [statement]) else x | x <- funcDefs cFile]
+	}
+

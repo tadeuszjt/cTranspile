@@ -2,7 +2,7 @@ import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Language (emptyDef)
 import qualified Text.ParserCombinators.Parsec.Token as Tok
 import System.Environment
-import Cgen as C
+import qualified Cgen as C
 
 lexer :: Tok.TokenParser()
 lexer = Tok.makeTokenParser emptyDef {
@@ -16,13 +16,14 @@ integer = Tok.integer lexer
 float = Tok.float lexer
 whiteSpace = Tok.whiteSpace lexer
 
-data Program = Program [String] deriving (Show)
+data Program = Program [Statement] deriving (Show)
+data Statement = Statement String deriving (Show)
 
-statement :: Parser String
+statement :: Parser Statement
 statement = do
 	id <- ident
 	semi
-	return id
+	return $ Statement id
 
 program :: Parser Program
 program = do
@@ -37,15 +38,24 @@ parseFile parser filename = do
 		Left e -> error $ show e
 		Right r -> r
 
+walk :: Program -> C.CFile
+walk (Program []) =
+	C.CFile {
+		C.includes = C.Includes ["stdio.h"],
+		C.funcDefs = [C.FuncDef {
+			C.header = C.FuncHdr {
+				C.retType = "int",
+				C.name = "main"
+			},
+			C.body = C.Block []
+		}]
+	}
+walk (Program (p:ps)) =
+	C.addStatement (walk $ Program ps) "main" (let (Statement s) = p in C.Statement s)
+
 main :: IO ()
 main = do
 	args <- getArgs
-	(Program p) <- parseFile program (head args)
-	C.putCFile (C.Includes ["stdio.h"]) [C.FuncDef {
-			header = C.FuncHdr {
-				retType = "int",
-				name = "main"
-			},
-			body = C.Block $ map C.Statement p
-		}]
+	p <- parseFile program (head args)
+	C.putCFile $ walk p
 	
