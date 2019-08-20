@@ -1,5 +1,7 @@
 module Cgen where
 
+import Control.Monad.State.Lazy
+
 tabs n = replicate n '\t'
 
 data Statement = Statement String
@@ -11,6 +13,11 @@ putBlock indent (Block stmts) = do
 	putStrLn $ tabs indent ++ "{"
 	mapM_ (putStatement $ indent+1) stmts
 	putStrLn $ tabs indent ++ "}"
+
+blockAddStatement :: Statement -> State Block ()
+blockAddStatement statement = do
+	(Block ss) <- get
+	put $ Block (ss ++ [statement])
 
 data Includes = Includes [String]
 putIncludes (Includes ss) =
@@ -45,6 +52,7 @@ addStatement :: CFile -> String -> Statement -> CFile
 addStatement cFile funcName statement =
 	CFile {
 		includes = includes cFile,
-		funcDefs = [ if (name $ header x) == funcName then FuncDef (header x) (Block $ (statements $ body x) ++ [statement]) else x | x <- funcDefs cFile]
+		funcDefs = [ if (name $ header x) == funcName then FuncDef (header x) (execState (blockAddStatement statement) $ body x) else x | x <- funcDefs cFile]
 	}
 
+-- State s a = State {runState :: s -> (s, a)}
