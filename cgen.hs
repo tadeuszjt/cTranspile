@@ -54,17 +54,17 @@ execCFileState cFileState =
 
 addFuncDef :: FuncDef -> CFileState
 addFuncDef funcDef = do
-	(CFile includes funcDefs) <- get
-	put $ CFile includes (funcDefs ++ [funcDef])
+	cFile <- get
+	put cFile {funcDefs = funcDefs cFile ++ [funcDef]}
 
 addStatement :: String -> Statement -> CFileState
 addStatement funcName statement = do
-	(CFile includes funcDefs) <- get
-	let funcDefs' = map (\x -> if name x == funcName then FuncDef (retType x) funcName (body x ++ [statement]) else x) funcDefs
-	put $ CFile includes funcDefs'
+	cFile <- get
+	let funcDefs' = map (\x -> if name x == funcName then x {body = body x ++ [statement]} else x) funcDefs
+	put cFile {funcDefs = funcDefs'}
 	
 ensureInclude :: String -> CFileState
 ensureInclude path = do
-	(CFile includes funcDefs) <- get
-	put $ CFile (Set.insert path includes) funcDefs
+	cFile <- get
+	put cFile {includes = Set.insert path $ includes cFile}
 	
