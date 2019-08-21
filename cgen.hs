@@ -1,6 +1,7 @@
 module Cgen where
 
 import Control.Monad.State
+import qualified Data.Set as Set
 
 tabs n = replicate n '\t'
 quotes s = "\"" ++ s ++ "\""
@@ -24,19 +25,19 @@ putFuncDef funcDef = do
 	putStrLn "}"
 
 data CFile = CFile {
-	includes :: [String],
+	includes :: Set.Set String,
 	funcDefs :: [FuncDef]
 }
 
 putCFile :: CFile -> IO ()
 putCFile cFile = do
-	mapM_ (\x -> putStrLn $ "#include " ++ quotes x) $ includes cFile
-	putStrLn "" 
+	mapM_ (\x -> putStrLn $ "#include " ++ quotes x) $ Set.toList (includes cFile)
+	putStrLn ""
 	mapM_ (\x -> do putFuncHdr x; putStrLn ";") $ funcDefs cFile
 	putStrLn "" 
 	mapM_ (\x -> do putFuncDef x; putStrLn "") $ funcDefs cFile
 
-emptyCFile = CFile [] []
+emptyCFile = CFile Set.empty []
 
 type CFileState = State CFile ()
 
@@ -48,8 +49,8 @@ addFuncDef funcDef = do
 	(CFile includes funcDefs) <- get
 	put $ CFile includes (funcDefs ++ [funcDef])
 
-addInclude :: String -> CFileState
-addInclude include = do
+ensureInclude :: String -> CFileState
+ensureInclude path = do
 	(CFile includes funcDefs) <- get
-	put $ CFile (includes ++ [include]) funcDefs
+	put $ CFile (Set.insert path includes) funcDefs
 	
