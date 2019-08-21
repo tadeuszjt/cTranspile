@@ -38,24 +38,15 @@ parseFile parser filename = do
 		Left e -> error $ show e
 		Right r -> r
 
-walk :: Program -> C.CFile
-walk (Program []) =
-	C.CFile {
-		C.includes = C.Includes ["stdio.h"],
-		C.funcDefs = [C.FuncDef {
-			C.header = C.FuncHdr {
-				C.retType = "int",
-				C.name = "main"
-			},
-			C.body = C.Block []
-		}]
-	}
-walk (Program (p:ps)) =
-	C.addStatement (walk $ Program ps) "main" (let (Statement s) = p in C.Statement s)
-
 main :: IO ()
 main = do
 	args <- getArgs
 	p <- parseFile program (head args)
-	C.putCFile $ walk p
+	C.putCFile $ C.CFile {
+		C.includes = ["stdio.h", "stdlib.h"],
+		C.funcDefs = [
+			C.FuncDef "int" "main" ["benis"],
+			C.FuncDef "void" "benis" ["bongis", "bengis"]
+		]
+	}
 	
