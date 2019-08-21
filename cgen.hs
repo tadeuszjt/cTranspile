@@ -7,10 +7,18 @@ tabs n = replicate n '\t'
 quotes s = "\"" ++ s ++ "\""
 wrap l r x = l ++ x ++ r
 
+data Statement = Print String | Call String
+
+putStatement :: Int -> Statement -> IO ()
+putStatement indent statement =
+	putStrLn $ (tabs indent) ++ case statement of
+		Print str -> wrap "puts(" ");" (quotes str) 
+		Call str -> str ++ "();"
+
 data FuncDef = FuncDef {
 	retType :: String,
 	name    :: String,
-	body    :: [String]
+	body    :: [Statement]
 }
 
 putFuncHdr :: FuncDef -> IO ()
@@ -21,7 +29,7 @@ putFuncDef :: FuncDef -> IO ()
 putFuncDef funcDef = do
 	putFuncHdr funcDef
 	putStrLn " {"
-	mapM_ (\x -> putStrLn $ tabs 1 ++ wrap "puts(" ");" (quotes x)) $ body funcDef
+	mapM_ (putStatement 1) $ body funcDef
 	putStrLn "}"
 
 data CFile = CFile {

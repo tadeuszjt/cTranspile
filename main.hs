@@ -16,8 +16,8 @@ integer = Tok.integer lexer
 float = Tok.float lexer
 whiteSpace = Tok.whiteSpace lexer
 
-data Program = Program [Statement] deriving (Show)
 data Statement = Statement String deriving (Show)
+data Program = Program [Statement] deriving (Show)
 
 statement :: Parser Statement
 statement = do
@@ -43,7 +43,7 @@ build (Program statements) = do
 	C.ensureInclude "stdio.h"
 	C.ensureInclude "stdio.h"
 	C.ensureInclude "stdint.h"
-	C.addFuncDef $ C.FuncDef "int" "main" (map (\(Statement str) -> str) statements)
+	C.addFuncDef $ C.FuncDef "int" "main" $ (map (\(Statement str) -> C.Print str) statements) ++ [C.Call "benis"]
 
 main :: IO ()
 main = do
