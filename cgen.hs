@@ -7,7 +7,7 @@ tabs n = replicate n '\t'
 quotes s = "\"" ++ s ++ "\""
 wrap l r x = l ++ x ++ r
 
-data Statement = Print String | Call String
+data Statement = Print String | Call String deriving Show
 
 putStatement :: Int -> Statement -> IO ()
 putStatement indent statement =
@@ -19,7 +19,7 @@ data FuncDef = FuncDef {
 	retType :: String,
 	name    :: String,
 	body    :: [Statement]
-}
+} deriving Show
 
 putFuncHdr :: FuncDef -> IO ()
 putFuncHdr funcDef = do
@@ -35,7 +35,7 @@ putFuncDef funcDef = do
 data CFile = CFile {
 	includes :: Set.Set String,
 	funcDefs :: [FuncDef]
-}
+} deriving Show
 
 putCFile :: CFile -> IO ()
 putCFile cFile = do
@@ -45,9 +45,9 @@ putCFile cFile = do
 	putStrLn "" 
 	mapM_ (\x -> do putFuncDef x; putStrLn "") $ funcDefs cFile
 
-emptyCFile = CFile Set.empty []
+emptyCFile = CFile Set.empty [FuncDef "int" "main" []]
 
-type CFileState = State CFile ()
+type CFileState = State CFile () 
 
 execCFileState cFileState =
 	execState cFileState
@@ -57,6 +57,12 @@ addFuncDef funcDef = do
 	(CFile includes funcDefs) <- get
 	put $ CFile includes (funcDefs ++ [funcDef])
 
+addStatement :: String -> Statement -> CFileState
+addStatement funcName statement = do
+	(CFile includes funcDefs) <- get
+	let funcDefs' = map (\x -> if name x == funcName then FuncDef (retType x) funcName (body x ++ [statement]) else x) funcDefs
+	put $ CFile includes funcDefs'
+	
 ensureInclude :: String -> CFileState
 ensureInclude path = do
 	(CFile includes funcDefs) <- get
