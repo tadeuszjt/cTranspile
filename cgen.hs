@@ -19,7 +19,7 @@ putFuncHdr funcDef = do
 putFuncDef :: FuncDef -> IO ()
 putFuncDef funcDef = do
 	putFuncHdr funcDef
-	putStrLn "{"
+	putStrLn " {"
 	mapM_ (\x -> putStrLn $ tabs 1 ++ wrap "puts(" ");" (quotes x)) $ body funcDef
 	putStrLn "}"
 
@@ -36,12 +36,19 @@ putCFile cFile = do
 	putStrLn "" 
 	mapM_ (\x -> do putFuncDef x; putStrLn "") $ funcDefs cFile
 
-addFuncDef :: FuncDef -> State CFile ()
+emptyCFile = CFile [] []
+
+type CFileState = State CFile ()
+
+execCFileState cFileState =
+	execState cFileState
+
+addFuncDef :: FuncDef -> CFileState
 addFuncDef funcDef = do
 	(CFile includes funcDefs) <- get
 	put $ CFile includes (funcDefs ++ [funcDef])
 
-addInclude :: String -> State CFile ()
+addInclude :: String -> CFileState
 addInclude include = do
 	(CFile includes funcDefs) <- get
 	put $ CFile (includes ++ [include]) funcDefs

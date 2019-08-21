@@ -38,15 +38,16 @@ parseFile parser filename = do
 		Left e -> error $ show e
 		Right r -> r
 
+build :: C.CFileState
+build = do
+	C.addInclude "stdio.h"
+	C.addInclude "stdint.h"
+	C.addFuncDef $ C.FuncDef "int" "main" ["benis"]
+
 main :: IO ()
 main = do
 	args <- getArgs
 	p <- parseFile program (head args)
-	C.putCFile $ C.CFile {
-		C.includes = ["stdio.h", "stdlib.h"],
-		C.funcDefs = [
-			C.FuncDef "int" "main" ["benis"],
-			C.FuncDef "void" "benis" ["bongis", "bengis"]
-		]
-	}
+	let cFile = C.emptyCFile
+	C.putCFile $ C.execCFileState build cFile
 	
