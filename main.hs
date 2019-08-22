@@ -72,7 +72,7 @@ buildStatement funcName s =
 		
 buildDefine :: Define -> C.CFileState
 buildDefine (Define name statements) = do
-	C.addFuncDef $ C.FuncDef "void" name [] 
+	C.addFuncDef name $ C.FuncDef "void" [] 
 	mapM_ (buildStatement name) statements
 
 buildStep :: Step -> C.CFileState
@@ -89,4 +89,3 @@ main = do
 	args <- getArgs
 	p <- parseFile (head args)
 	C.putCFile $ C.execCFileState (build p) C.emptyCFile
---	
