@@ -4,9 +4,16 @@ import Control.Monad.State
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-tabs n = replicate n '\t'
+quotes :: String -> String
 quotes s = "\"" ++ s ++ "\""
-wrap l r x = l ++ x ++ r
+
+wrap :: String -> String -> String -> String
+wrap l r x =
+	l ++ x ++ r
+
+putTabs :: Int -> IO ()
+putTabs i =
+	putStr $ replicate i '\t'
 
 data Statement = Print String | Call String deriving Show
 
@@ -26,8 +33,9 @@ type CFileState = State CFile ()
 emptyCFile = CFile Set.empty (Map.singleton "main" $ FuncDef "int" [])
 
 putStatement :: Int -> Statement -> IO ()
-putStatement indent statement =
-	putStrLn $ (tabs indent) ++ case statement of
+putStatement indent statement = do
+	putTabs indent
+	putStrLn $ case statement of
 		Print str -> wrap "puts(" ");" $ quotes str
 		Call str -> str ++ "();"
 
