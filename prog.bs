@@ -1,4 +1,5 @@
-bongis: "ahhhh";
-benis: "benis", bongis, "bengis";
-"bongis";
-benis;
+tadeusz: "benis";
+tad3: tadeusz, 324234, tadeusz, tadeusz;
+"tadusz";
+tad3;
+234;

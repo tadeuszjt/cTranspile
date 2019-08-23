@@ -19,27 +19,42 @@ stringLiteral = Tok.stringLiteral lexer
 colon = Tok.colon lexer
 commaSep = Tok.commaSep lexer
 
-data Statement = PrintS String | Call String deriving Show
-data Define = Define String [Statement] deriving Show
-data Step = StepStatement Statement | StepDefine Define deriving Show
+data Statement
+	= Call String
+	| Str String
+	| Num Int
+	deriving Show
+
+data Step
+	= StepStatement Statement
+	| Define String [Statement]
+	deriving Show
+
 data Program = Program [Step] deriving Show
 
-
-printS :: Parser Statement
-printS = do
-	lit <- stringLiteral
-	return $ PrintS lit
 
 call :: Parser Statement
 call = do
 	id <- ident
 	return $ Call id
 
+str :: Parser Statement
+str = do
+	s <- stringLiteral
+	return $ Str s
+
+int :: Parser Statement
+int = do
+	n <- integer
+	return $ Num (fromInteger n)
+
 statement :: Parser Statement
 statement =
-	printS <|> call
+	try call <|>
+	try int <|>
+	str
 
-define :: Parser Define
+define :: Parser Step
 define = do
 	name <- ident
 	colon
@@ -48,14 +63,13 @@ define = do
 
 step :: Parser Step
 step =
-	try (do d <- define; return $ StepDefine d) <|> 
+	try define <|> 
 	(do s <- statement; return $ StepStatement s)
 
 program :: Parser Program
 program = do
 	steps <- many1 (do s <- step; semi; return s)
 	return $ Program steps
-
 
 parseFile :: String -> IO Program
 parseFile filename = do
@@ -67,10 +81,11 @@ parseFile filename = do
 buildStatement :: String -> Statement -> C.CFileState
 buildStatement funcName s =
 	case s of
-		PrintS str -> do C.ensureInclude "stdio.h"; C.addStatement funcName (C.Print str)
 		Call str -> do C.addStatement funcName (C.Call str)
+		Str str -> do C.addStatement funcName (C.Print str); C.include "stdio.h"
+		Num n -> do C.addStatement funcName (C.PrintNum n); C.include "stdio.h"
 		
-buildDefine :: Define -> C.CFileState
+buildDefine :: Step -> C.CFileState
 buildDefine (Define name statements) = do
 	C.addFuncDef name $ C.FuncDef "void" [] 
 	mapM_ (buildStatement name) statements
@@ -78,7 +93,7 @@ buildDefine (Define name statements) = do
 buildStep :: Step -> C.CFileState
 buildStep step = case step of
 	StepStatement s -> buildStatement "main" s
-	StepDefine    d -> buildDefine d
+	d@(Define _ _) -> buildDefine d
 
 build :: Program -> C.CFileState
 build (Program steps) =

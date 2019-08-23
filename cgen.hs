@@ -15,7 +15,11 @@ putTabs :: Int -> IO ()
 putTabs i =
 	putStr $ replicate i '\t'
 
-data Statement = Print String | Call String deriving Show
+data Statement
+	= Print String
+	| Call String
+	| PrintNum Int
+	deriving Show
 
 data FuncDef = FuncDef {
 	retType :: String,
@@ -38,6 +42,7 @@ putStatement indent statement = do
 	putStrLn $ case statement of
 		Print str -> wrap "puts(" ");" $ quotes str
 		Call str -> str ++ "();"
+		PrintNum n -> wrap "printf(\"%d\\n\", "  ");" $ show n 
 
 putFuncHdr :: String -> FuncDef -> IO ()
 putFuncHdr name def =
@@ -74,8 +79,8 @@ addStatement funcName statement = do
 			funcDefs = Map.insert funcName (def {body = body def ++ [statement]}) defs
 		}
 
-ensureInclude :: String -> CFileState
-ensureInclude path = do
+include :: String -> CFileState
+include path = do
 	cFile <- get
 	put cFile {includes = Set.insert path $ includes cFile}
 
