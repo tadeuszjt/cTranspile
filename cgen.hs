@@ -66,23 +66,22 @@ putCFile cFile = do
 
 addFuncDef :: String -> FuncDef -> CFileState
 addFuncDef name def = do
-	cFile <- get
-	put cFile {funcDefs = Map.insert name def $ funcDefs cFile}
+	defs <- gets funcDefs
+	modify $ \s -> s {funcDefs = Map.insert name def defs}
 
 addStatement :: String -> Statement -> CFileState
 addStatement funcName statement = do
-	cFile <- get
-	let defs = funcDefs cFile
+	defs <- gets funcDefs
 	case Map.lookup funcName defs of
-		Nothing -> error "def not found"
-		Just def -> put cFile {
+		Nothing  -> error "def not found"
+		Just def -> modify $ \s -> s {
 			funcDefs = Map.insert funcName (def {body = body def ++ [statement]}) defs
 		}
 
 include :: String -> CFileState
 include path = do
-	cFile <- get
-	put cFile {includes = Set.insert path $ includes cFile}
+	incs <- gets includes
+	modify $ \s -> s { includes = Set.insert path incs }
 
 execCFileState cFileState =
 	execState cFileState
